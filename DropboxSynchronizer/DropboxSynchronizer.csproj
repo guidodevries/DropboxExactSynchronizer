@@ -138,6 +138,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Dropbox\DropboxAuthorizationBroker.cs" />
     <Compile Include="Exact\DocumentAttachment.cs" />
     <Compile Include="Exact\Document.cs" />
     <Compile Include="Exact\ExactAuthorizationBroker.cs" />
@@ -146,7 +147,7 @@
     <Compile Include="Interfaces\IDocumentAttachment.cs" />
     <Compile Include="Interfaces\IAuthorizationBroker.cs" />
     <Compile Include="Interfaces\IDocument.cs" />
-    <Compile Include="Interfaces\ILocalFileCache.cs" />
+    <Compile Include="Interfaces\IFileStore.cs" />
     <Compile Include="Interfaces\IRedirectUriService.cs" />
     <Compile Include="LocalFileCache.cs" />
     <Compile Include="RedirectUriService.cs" />

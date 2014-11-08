@@ -8,7 +8,7 @@ namespace DropboxSynchronizer.Exact
     /// <summary>
     /// Service proxy specific for handling documents in Exact Online.
     /// </summary>
-    public class ExactDocumentService : ExactServiceBase
+    public class ExactDocumentService : ExactServiceBase, IFileStore
     {
         #region Private Fields
 
@@ -54,16 +54,16 @@ namespace DropboxSynchronizer.Exact
         }
 
         /// <summary>
-        /// Stores the document.
+        /// Stores the file as document.
         /// </summary>
-        /// <param name="name">The name.</param>
-        /// <param name="fileContent">Content of the file.</param>
-        public void StoreDocument(string name, byte[] fileContent)
+        /// <param name="fileName">Name of the file.</param>
+        /// <param name="content">The content.</param>
+        public void StoreFile(string fileName, byte[] content)
         {
             var newDocument = new Document
             {
                 ID = Guid.NewGuid().ToString(),
-                Subject = name,
+                Subject = fileName,
                 HasEmptyBody = true,
                 Type = 183
             };
@@ -72,7 +72,7 @@ namespace DropboxSynchronizer.Exact
             request.AddJsonBody(newDocument);
             this.ExecuteRequest(request);
 
-            this.StoreAttachment(name, fileContent, newDocument.ID);
+            this.StoreAttachment(fileName, content, newDocument.ID);
         }
 
         #endregion

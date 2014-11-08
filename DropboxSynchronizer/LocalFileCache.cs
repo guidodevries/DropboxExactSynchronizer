@@ -10,7 +10,7 @@ namespace DropboxSynchronizer
     /// <summary>
     /// Local file cache used to store and retrieve files.
     /// </summary>
-    public class LocalFileCache : ILocalFileCache
+    public class LocalFileCache : IFileStore
     {
         #region Private Fields
 

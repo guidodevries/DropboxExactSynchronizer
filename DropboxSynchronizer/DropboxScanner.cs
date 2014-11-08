@@ -14,7 +14,7 @@ namespace DropboxSynchronizer
 
         private readonly ITimer timer;
         private readonly IDropbox dropboxService;
-        private readonly ILocalFileCache fileCache;
+        private readonly IFileStore fileStore;
 
         private string dropBoxFolderToScan;
         private string deltaCursor = null;
@@ -28,11 +28,11 @@ namespace DropboxSynchronizer
         /// </summary>
         /// <param name="timer">The timer.</param>
         /// <param name="dropboxService">The dropbox service.</param>
-        /// <param name="fileCache">The file cache.</param>
+        /// <param name="fileStore">The file cache.</param>
         /// <param name="folderToScan">The folder to scan.</param>
         /// <exception cref="System.ArgumentNullException">
         /// </exception>
-        public DropboxScanner(ITimer timer, IDropbox dropboxService, ILocalFileCache fileCache, string folderToScan)
+        public DropboxScanner(ITimer timer, IDropbox dropboxService, IFileStore fileStore, string folderToScan)
         {
             if (timer == null)
             {
@@ -44,16 +44,16 @@ namespace DropboxSynchronizer
                 throw new ArgumentNullException("dropboxService");
             }
 
-            if (fileCache == null)
+            if (fileStore == null)
             {
-                throw new ArgumentNullException("fileCache");
+                throw new ArgumentNullException("fileStore");
             }
 
             this.timer = timer;
             this.timer.TimerTick += (s, e) => this.ScanDirectoryForNewFiles();
 
             this.dropboxService = dropboxService;
-            this.fileCache = fileCache;
+            this.fileStore = fileStore;
             this.dropBoxFolderToScan = !string.IsNullOrWhiteSpace(folderToScan) ? folderToScan : "/";
         }
 
@@ -101,7 +101,7 @@ namespace DropboxSynchronizer
                             task =>
                             {
                                 var fileName = Path.GetFileName(task.Result.Metadata.Path);
-                                this.fileCache.StoreFile(fileName, task.Result.Content);
+                                this.fileStore.StoreFile(fileName, task.Result.Content);
                             });
                     }
                 }

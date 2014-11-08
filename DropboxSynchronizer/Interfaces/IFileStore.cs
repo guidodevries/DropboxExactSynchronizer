@@ -3,7 +3,7 @@
     /// <summary>
     /// Interface of the local file cache.
     /// </summary>
-    public interface ILocalFileCache
+    public interface IFileStore
     {
         /// <summary>
         /// Stores the file.

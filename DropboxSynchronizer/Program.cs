@@ -1,16 +1,11 @@
 ﻿using System;
 using System.Configuration;
-using System.Diagnostics;
 using System.IO;
-using System.ServiceModel;
-using System.ServiceModel.Web;
 
+using DropboxSynchronizer.Dropbox;
 using DropboxSynchronizer.Exact;
-using DropboxSynchronizer.Interfaces;
 
 using Spring.Social.Dropbox.Api;
-using Spring.Social.Dropbox.Connect;
-using Spring.Social.OAuth1;
 
 namespace DropboxSynchronizer
 {
@@ -25,6 +20,8 @@ namespace DropboxSynchronizer
         /// <param name="args">The arguments.</param>
         static void Main(string[] args)
         {
+            DropboxScanner dropboxScanner = null;
+
             try
             {
                 AuthenticateExactOnline(
@@ -32,94 +29,63 @@ namespace DropboxSynchronizer
                     {
                         if (success)
                         {
-                            var documents = documentService.GetDocuments();
-                            var attachments = documentService.GetDocumentAttachments();
+                            var dropboxFolder = ConfigurationManager.AppSettings["DropboxFolder"];
+                            AuthenticateDropbox(
+                                (dropBoxAuthenticationCompleted, dropbox) =>
+                                {
+                                    var timer = new Timer();
+                                    var localFileCache = new LocalFileCache();
+                                    dropboxScanner = new DropboxScanner(
+                                        timer,
+                                        dropbox,
+                                        documentService,
+                                        dropboxFolder);
 
-                            var content = File.ReadAllBytes(@"D:\Users\gdvries\Desktop\Test\Test.txt");
+                                    dropboxScanner.Start();
 
-                            documentService.StoreDocument("NewDocumentFromCode.txt", content);
+                                    //var documents = documentService.GetDocuments();
+                                    //var attachments = documentService.GetDocumentAttachments();
+
+                                    //var content = File.ReadAllBytes(@"D:\Users\gdvries\Desktop\Test\Test.txt");
+                                    //documentService.StoreDocument("NewDocumentFromCode.txt", content);
+
+                                });
                         }
                     });
-
-
-                //var dropboxFolder = ConfigurationManager.AppSettings["DropboxFolder"];
-                //var dropbox = AuthenticateDropbox();
-
-                //var timer = new Timer();
-                //var localFileCache = new LocalFileCache();
-                //var dropboxScanner = new DropboxScanner(timer, dropbox, localFileCache, dropboxFolder);
-
-                //dropboxScanner.Start();
 
                 Console.WriteLine("Press any key to exit");
                 Console.ReadLine();
             }
-            catch (AggregateException ae)
-            {
-                ae.Handle(ex =>
-                    {
-                        if (ex is DropboxApiException)
-                        {
-                            Console.WriteLine(ex.Message);
-                            return true;
-                        }
-                        return false;
-                    });
-            }
             catch (Exception ex)
             {
                 Console.WriteLine(ex);
+                Console.ReadLine();
             }
             finally
             {
-                Console.ReadLine();
+                if (dropboxScanner != null)
+                {
+                    dropboxScanner.Stop();
+                }
             }
         }
 
         /// <summary>
-        /// Setup the authentication for dropbox.
+        /// Force the user to first authenticate at Dropbox.
         /// </summary>
-        /// <returns>The dropbox API.</returns>
-        private static IDropbox AuthenticateDropbox()
+        /// <param name="callBack">The call back returning a value indicating success and the Dropbox API.</param>
+        private static void AuthenticateDropbox(Action<bool, IDropbox> callBack)
         {
             var dropboxKey = ConfigurationManager.AppSettings["DropboxKey"];
             var dropboxSecret = ConfigurationManager.AppSettings["DropboxSecret"];
+            var dropboxRedirectUri = ConfigurationManager.AppSettings["DropboxRedirectUri"];
 
-            var dropboxServiceProvider = new DropboxServiceProvider(dropboxKey, dropboxSecret, AccessLevel.Full);
-            var oauthToken = dropboxServiceProvider.OAuthOperations.FetchRequestTokenAsync(null, null).Result;
-
-            var parameters = new OAuth1Parameters { CallbackUrl = @"http://localhost:8000/dropbox/callback" };
-            var authenticateUrl = dropboxServiceProvider.OAuthOperations.BuildAuthorizeUrl(oauthToken.Value, parameters);
-
-            string authenticationCode;
-
-            var authenticationCodeService = RedirectUriService.Instance;
-            authenticationCodeService.OnAuthenticatedCodeRecieved += (s, e) => authenticationCode = e;
-
-            var serviceHost = new WebServiceHost(authenticationCodeService, new Uri("http://localhost:8000/"));
-            serviceHost.AddServiceEndpoint(typeof(IRedirectUriService), new WebHttpBinding(), string.Empty);
-
-            try
-            {
-                serviceHost.Open();
-
-                Process.Start(authenticateUrl);
-                Console.Write("Press any key when authorization attempt has succeeded");
-                Console.ReadLine();
-
-                var requestToken = new AuthorizedRequestToken(oauthToken, null);
-                var oauthAccessToken = dropboxServiceProvider.OAuthOperations.ExchangeForAccessTokenAsync(requestToken, null).Result;
-
-                return dropboxServiceProvider.GetApi(oauthAccessToken.Value, oauthAccessToken.Secret);
-            }
-            finally
-            {
-                serviceHost.Close();
-            }
+            var dropboxBroker = new DropboxAuthorizationBroker(dropboxKey, dropboxSecret, dropboxRedirectUri);
+            dropboxBroker.Authenticate(callBack);
         }
 
         /// <summary>
-        /// Force the user to first authenticate.
+        /// Force the user to first authenticate at Exact.
         /// </summary>
         /// <param name="callBack">The call back returning a value indicating success and the authorizationBroker.</param>
         private static void AuthenticateExactOnline(Action<bool, ExactDocumentService> callBack)
