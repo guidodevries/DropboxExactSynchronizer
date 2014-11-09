@@ -151,7 +151,6 @@
     <Compile Include="Interfaces\IRedirectUriService.cs" />
     <Compile Include="LocalFileCache.cs" />
     <Compile Include="RedirectUriService.cs" />
-    <Compile Include="SynchronizationHistory.cs" />
     <Compile Include="Timer.cs" />
     <Compile Include="DropboxScanner.cs" />
     <Compile Include="Interfaces\ITimer.cs" />

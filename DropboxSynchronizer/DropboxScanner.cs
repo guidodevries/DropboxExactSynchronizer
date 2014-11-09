@@ -6,6 +6,9 @@ using Spring.Social.Dropbox.Api;
 
 namespace DropboxSynchronizer
 {
+    /// <summary>
+    /// Dropbox scanner is responsible for scanning the Dropbox repository and storing those file in a fileStore.
+    /// </summary>
     public class DropboxScanner
     {
         #region Private Fields
@@ -59,6 +62,20 @@ namespace DropboxSynchronizer
 
         #endregion
 
+        #region Public Events
+
+        /// <summary>
+        /// Triggered when an error occurred.
+        /// </summary>
+        public event EventHandler<string> ErrorOccurred;
+
+        /// <summary>
+        /// Triggered when a file was synchronized.
+        /// </summary>
+        public event EventHandler<string> FileSynchronized;
+
+        #endregion
+
         #region Public Methods
 
         /// <summary>
@@ -99,12 +116,18 @@ namespace DropboxSynchronizer
                     {
                         this.dropboxService.DownloadFileAsync(entry.Path).ContinueWith(
                             task =>
-                            {
-                                var fileName = Path.GetFileName(task.Result.Metadata.Path);
-                                this.fileStore.StoreFile(fileName, task.Result.Content);
-                            });
+                                {
+                                    var fileName = Path.GetFileName(task.Result.Metadata.Path);
+                                    this.fileStore.StoreFile(fileName, task.Result.Content);
+
+                                    this.RaiseFileSynchronized(task.Result.Metadata.Path);
+                                });
                     }
                 }
+            }
+            catch (Exception ex)
+            {
+                this.RaiseErrorOccurred(ex.Message);
             }
             finally
             {
@@ -120,6 +143,32 @@ namespace DropboxSynchronizer
         private bool DoesFileMatchScanCriteria(Entry entry)
         {
             return !entry.IsDirectory && entry.Path.StartsWith(this.dropBoxFolderToScan);
+        }
+
+        /// <summary>
+        /// Raises the file synchronized event.
+        /// </summary>
+        /// <param name="path">The path.</param>
+        private void RaiseFileSynchronized(string path)
+        {
+            var handler = this.FileSynchronized;
+            if (handler != null)
+            {
+                handler(this, path);
+            }
+        }
+
+        /// <summary>
+        /// Raises the error occurred event.
+        /// </summary>
+        /// <param name="message">The message.</param>
+        private void RaiseErrorOccurred(string message)
+        {
+            var handler = this.ErrorOccurred;
+            if (handler != null)
+            {
+                handler(this, message);
+            }
         }
 
         #endregion

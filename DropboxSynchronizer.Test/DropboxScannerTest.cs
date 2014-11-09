@@ -18,7 +18,7 @@ namespace DropboxSynchronizer.Test
         #region Private Fields
 
         private Mock<ITimer> timerMock;
-        private Mock<ILocalFileCache> localFileCacheMock;
+        private Mock<IFileStore> localFileCacheMock;
         private Mock<IDropbox> dropboxApiMock;
 
         private DropboxScanner dropboxScanner;
@@ -34,7 +34,7 @@ namespace DropboxSynchronizer.Test
         public void TestInitialize()
         {
             this.timerMock = new Mock<ITimer>();
-            this.localFileCacheMock = new Mock<ILocalFileCache>();
+            this.localFileCacheMock = new Mock<IFileStore>();
             this.dropboxApiMock = new Mock<IDropbox>();
 
             var deltaPageStub = new DeltaPage { Entries = new List<DeltaEntry>() };

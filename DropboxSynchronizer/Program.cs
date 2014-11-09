@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Configuration;
-using System.IO;
 
 using DropboxSynchronizer.Dropbox;
 using DropboxSynchronizer.Exact;
@@ -24,7 +23,7 @@ namespace DropboxSynchronizer
 
             try
             {
-                AuthenticateExactOnline(
+               AuthenticateExactOnline(
                     (success, documentService) =>
                     {
                         if (success)
@@ -34,21 +33,19 @@ namespace DropboxSynchronizer
                                 (dropBoxAuthenticationCompleted, dropbox) =>
                                 {
                                     var timer = new Timer();
-                                    var localFileCache = new LocalFileCache();
                                     dropboxScanner = new DropboxScanner(
                                         timer,
                                         dropbox,
                                         documentService,
                                         dropboxFolder);
 
+                                    dropboxScanner.FileSynchronized += (s, path) => 
+                                        Console.WriteLine(string.Format("File Copied: {0}", path));
+                                    dropboxScanner.ErrorOccurred += (s, message) => 
+                                        Console.WriteLine(string.Format("Error occurred: {0}", message));
+
+                                    Console.WriteLine("Start synchronizing files from Dropbox to Exact");
                                     dropboxScanner.Start();
-
-                                    //var documents = documentService.GetDocuments();
-                                    //var attachments = documentService.GetDocumentAttachments();
-
-                                    //var content = File.ReadAllBytes(@"D:\Users\gdvries\Desktop\Test\Test.txt");
-                                    //documentService.StoreDocument("NewDocumentFromCode.txt", content);
-
                                 });
                         }
                     });
